@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const profile = Storage.getProfile();
 
         // Saludo personalizado
-        const greeting = document.querySelector('[data-i18n="greeting"]');
+        const greeting = document.getElementById('app-greeting');
         if (profile) {
             greeting.setAttribute('data-i18n', 'welcome-back');
             greeting.setAttribute('data-i18n-name', profile.name);
