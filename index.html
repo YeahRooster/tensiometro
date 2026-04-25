@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tensiometro Premium - Registro de Salud</title>
+    <meta name="description" content="Lleva un control profesional de tu presión arterial con estándares internacionales de la AHA.">
+    
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#38bdf8">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Fondo decorativo con gradientes suaves -->
+    <div class="bg-decoration">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+    </div>
+
+    <div id="app" class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <i data-lucide="heart-pulse" class="icon-heart"></i>
+                <h1 data-i18n="app-title">Tensiometro</h1>
+            </div>
+            <div class="header-actions">
+                <select id="lang-selector" class="lang-select">
+                    <option value="es">🇪🇸 ES</option>
+                    <option value="en">🇺🇸 EN</option>
+                </select>
+                <button id="btn-profile" class="btn-icon">
+                    <i data-lucide="user"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content (Vistas controladas por JS) -->
+        <main id="main-content">
+            <!-- Vista: Selección de Perfil (Login/Switch) -->
+            <section id="view-profile-select" class="view hidden">
+                <div class="welcome-card glass" style="text-align:center">
+                    <h2 data-i18n="who-is-using">¿Quién está usando la app?</h2>
+                    <div id="profile-list" class="profile-select-grid">
+                        <!-- Perfiles inyectados por JS -->
+                    </div>
+                    <button id="btn-create-new-profile" class="btn secondary" style="margin-top:20px" data-i18n="create-new">Crear Nuevo Perfil</button>
+                </div>
+            </section>
+
+            <!-- Vista: Dashboard (Default) -->
+            <section id="view-dashboard" class="view">
+                <div class="welcome-card glass">
+                    <h2 data-i18n="greeting">Hola</h2>
+                    <p data-i18n="status-summary">Aquí tienes tu último resumen médico.</p>
+                </div>
+
+                <div class="latest-reading-container">
+                    <div id="latest-card" class="reading-card main-reading glass">
+                        <div class="reading-label" data-i18n="latest-measurement">Última Medición</div>
+                        <div class="reading-values">
+                            <div class="value-block">
+                                <span class="label">SYS</span>
+                                <span id="val-sys" class="value">--</span>
+                            </div>
+                            <div class="divider">/</div>
+                            <div class="value-block">
+                                <span class="label">DIA</span>
+                                <span id="val-dia" class="value">--</span>
+                            </div>
+                        </div>
+                        <div class="reading-details">
+                            <div class="detail-item">
+                                <i data-lucide="activity"></i>
+                                <span id="val-pulse">--</span> bpm
+                            </div>
+                            <div id="status-tag" class="status-tag" data-i18n="no-data">Sin Datos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions-grid">
+                    <button id="btn-add-record" class="action-card glass primary">
+                        <i data-lucide="plus-circle"></i>
+                        <span data-i18n="add-reading">Nueva Medición</span>
+                    </button>
+                    <button id="btn-view-history" class="action-card glass">
+                        <i data-lucide="history"></i>
+                        <span data-i18n="history">Historial</span>
+                    </button>
+                    <button id="btn-view-stats" class="action-card glass">
+                        <i data-lucide="line-chart"></i>
+                        <span data-i18n="nav-stats">Gráficos</span>
+                    </button>
+                </div>
+
+                <!-- Consejo de Salud Dinámico -->
+                <div id="health-tip-container" class="health-tip-card glass hidden">
+                    <div class="tip-header">
+                        <i data-lucide="sparkles"></i>
+                        <span data-i18n="health-tip-title">Consejo de Salud</span>
+                    </div>
+                    <p id="health-tip-text">--</p>
+                </div>
+            </section>
+
+            <!-- Vista: Formulario de Medición -->
+            <section id="view-form" class="view hidden">
+                <div class="form-card glass">
+                    <h2 data-i18n="new-record-title">Nueva Medición</h2>
+                    <form id="bp-form">
+                        <div class="input-group">
+                            <label for="input-sys" data-i18n="label-sys">Sistólica (SYS)</label>
+                            <input type="number" id="input-sys" placeholder="120" required min="40" max="300">
+                            <small>mmHg</small>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-dia" data-i18n="label-dia">Diastólica (DIA)</label>
+                            <input type="number" id="input-dia" placeholder="80" required min="30" max="200">
+                            <small>mmHg</small>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-pulse" data-i18n="label-pulse">Pulso (BPM)</label>
+                            <input type="number" id="input-pulse" placeholder="70" required min="30" max="250">
+                            <small>bpm</small>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="input-meds">
+                            <label for="input-meds" data-i18n="label-meds">Tomé mi medicación</label>
+                        </div>
+                        <div class="form-buttons">
+                            <button type="button" id="btn-cancel-form" class="btn secondary" data-i18n="cancel">Cancelar</button>
+                            <button type="submit" class="btn primary" data-i18n="save">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Vista: Historial -->
+            <section id="view-history" class="view hidden">
+                <div class="history-header">
+                    <button id="btn-back-to-dash-hist" class="btn-icon">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <h2 data-i18n="full-history">Historial</h2>
+                    <button id="btn-export-csv" class="btn-icon" title="Exportar CSV">
+                        <i data-lucide="download"></i>
+                    </button>
+                </div>
+                <div id="history-list" class="history-list">
+                    <!-- Cards se inyectan mediante JS -->
+                </div>
+            </section>
+
+            <!-- Vista: Estadísticas/Gráficos -->
+            <section id="view-stats" class="view hidden">
+                <div class="history-header">
+                    <button id="btn-back-to-dash-stats" class="btn-icon">
+                        <i data-lucide="arrow-left"></i>
+                    </button>
+                    <h2 data-i18n="nav-stats">Tendencias</h2>
+                </div>
+                <div class="chart-container glass">
+                    <canvas id="bp-chart"></canvas>
+                </div>
+                <div class="stats-summary glass">
+                    <h3 data-i18n="stats-avg">Promedios</h3>
+                    <div class="avg-grid">
+                        <div class="avg-item">
+                            <label>SYS</label>
+                            <span id="avg-sys">--</span>
+                        </div>
+                        <div class="avg-item">
+                            <label>DIA</label>
+                            <span id="avg-dia">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vista/Modal: Perfil de Usuario -->
+            <section id="view-profile" class="view hidden">
+                <div class="form-card glass">
+                    <h2 data-i18n="profile-title">Mi Perfil</h2>
+                    <form id="profile-form">
+                        <div class="input-group">
+                            <label for="input-name" data-i18n="profile-name">Nombre</label>
+                            <input type="text" id="input-name" placeholder="Tu nombre" required>
+                        </div>
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label for="input-age" data-i18n="profile-age">Edad</label>
+                                <input type="number" id="input-age" placeholder="30" required>
+                            </div>
+                            <div class="input-group">
+                                <label for="input-weight" data-i18n="profile-weight">Peso (kg)</label>
+                                <input type="number" id="input-weight" placeholder="75" step="0.1" required>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-height" data-i18n="profile-height">Altura (cm)</label>
+                            <input type="number" id="input-height" placeholder="175" required>
+                        </div>
+                        <div class="bmi-display hidden" id="bmi-info">
+                            <span data-i18n="your-bmi">Tu IMC:</span> <strong id="val-bmi">--</strong>
+                            <small id="bmi-status"></small>
+                        </div>
+                        <div class="form-buttons">
+                            <button type="submit" class="btn primary" data-i18n="save-profile">Guardar Perfil</button>
+                        </div>
+                    </form>
+                    <hr style="margin: 20px 0; opacity: 0.1">
+                    <button id="btn-logout" class="btn secondary" style="width:100%; border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;" data-i18n="logout">Cerrar Sesión / Cambiar</button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Navegación inferior (Mobile Friendly) -->
+        <nav class="app-nav">
+            <button class="nav-item active" data-view="dashboard">
+                <i data-lucide="layout-dashboard"></i>
+                <span data-i18n="nav-home">Inicio</span>
+            </button>
+            <button class="nav-item" data-view="history">
+                <i data-lucide="list"></i>
+                <span data-i18n="nav-history">Historial</span>
+            </button>
+            <button class="nav-item" data-view="stats">
+                <i data-lucide="line-chart"></i>
+                <span data-i18n="nav-stats">Gráficos</span>
+            </button>
+            <button class="nav-item" data-view="profile">
+                <i data-lucide="settings"></i>
+                <span data-i18n="nav-profile">Ajustes</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Scripts -->
+    <script src="i18n.js"></script>
+    <script src="logic.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

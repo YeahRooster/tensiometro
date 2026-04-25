@@ -1,0 +1,15 @@
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Configuración del editor
+.vscode/
+.idea/
+
+# Temporales
+tmp/
+*.log
+
+# Git ignore para Tensiometro
+node_modules/
+dist/
