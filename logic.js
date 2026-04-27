@@ -25,6 +25,15 @@ function interpretBP(sys, dia) {
 }
 
 /**
+ * Interpreta el pulso cardíaco (BPM)
+ */
+function interpretPulse(bpm) {
+    if (bpm < 60) return { id: 'pulse-brady', class: 'pulse-brady' };
+    if (bpm > 100) return { id: 'pulse-tachy', class: 'pulse-tachy' };
+    return { id: 'pulse-normal', class: 'pulse-normal' };
+}
+
+/**
  * Devuelve un consejo de salud basado en la categoría de la AHA
  */
 function getHealthTip(categoryId) {

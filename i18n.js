@@ -49,6 +49,11 @@ const translations = {
         "logout": "Cambiar de Usuario / Salir",
         "who-is-using": "¿Quién va a usar la app?",
         "create-new": "Crear nuevo perfil",
+        "label-notes": "Notas (Opcional)",
+        "placeholder-notes": "Ej: Me sentía mareado, post-ejercicio...",
+        "pulse-brady": "BRADICARDIA (Lento)",
+        "pulse-normal": "Normal",
+        "pulse-tachy": "TAQUICARDIA (Rápido)",
     },
     en: {
         "app-title": "BP Tracker",
@@ -100,6 +105,11 @@ const translations = {
         "logout": "Logout / Switch User",
         "who-is-using": "Who's using the app?",
         "create-new": "Create new profile",
+        "label-notes": "Notes (Optional)",
+        "placeholder-notes": "e.g. Felt dizzy, post-exercise...",
+        "pulse-brady": "BRADYCARDIA (Slow)",
+        "pulse-normal": "Normal",
+        "pulse-tachy": "TACHYCARDIA (Fast)",
     }
 };
 

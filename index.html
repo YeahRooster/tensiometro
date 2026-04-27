@@ -88,6 +88,7 @@
                             <div class="detail-item">
                                 <i data-lucide="activity"></i>
                                 <span id="val-pulse">--</span> bpm
+                                <small id="pulse-status" class="pulse-tag"></small>
                             </div>
                             <div id="status-tag" class="status-tag" data-i18n="no-data">Sin Datos</div>
                         </div>
@@ -142,6 +143,10 @@
                         <div class="checkbox-group">
                             <input type="checkbox" id="input-meds">
                             <label for="input-meds" data-i18n="label-meds">Tomé mi medicación</label>
+                        </div>
+                        <div class="input-group">
+                            <label for="input-notes" data-i18n="label-notes">Notas (Opcional)</label>
+                            <textarea id="input-notes" data-i18n-placeholder="placeholder-notes" rows="2" class="glass-input"></textarea>
                         </div>
                         <div class="form-buttons">
                             <button type="button" id="btn-cancel-form" class="btn secondary" data-i18n="cancel">Cancelar</button>

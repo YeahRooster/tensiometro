@@ -104,6 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dia: parseInt(document.getElementById('input-dia').value),
             pulse: parseInt(document.getElementById('input-pulse').value),
             meds: document.getElementById('input-meds').checked,
+            notes: document.getElementById('input-notes').value,
             date: new Date().toLocaleString()
         };
         
@@ -158,6 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('val-sys').innerText = latest.sys;
             document.getElementById('val-dia').innerText = latest.dia;
             document.getElementById('val-pulse').innerText = latest.pulse;
+            
+            // Estado del pulso
+            const pulseInter = interpretPulse(latest.pulse);
+            const pulseStatus = document.getElementById('pulse-status');
+            pulseStatus.setAttribute('data-i18n', pulseInter.id);
+            pulseStatus.className = 'pulse-tag ' + pulseInter.class;
             
             const statusTag = document.getElementById('status-tag');
             statusTag.setAttribute('data-i18n', interpretation.id);
@@ -215,16 +222,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         history.forEach(item => {
             const inter = interpretBP(item.sys, item.dia);
+            const pulseInter = interpretPulse(item.pulse);
             const card = document.createElement('div');
             card.className = `history-item glass ${inter.class}`;
             card.innerHTML = `
                 <div class="history-info">
                     <div class="history-date">${item.date}</div>
                     <div class="history-bp">${item.sys}<span>/</span>${item.dia}</div>
-                    <div class="history-pulse"><i data-lucide="activity" style="width:12px; vertical-align:middle"></i> ${item.pulse} bpm</div>
-                    ${item.meds ? `<div class="meds-indicator" data-i18n="meds-taken">Medicada</div>` : ''}
+                    <div class="history-pulse">
+                        <i data-lucide="activity" style="width:12px; vertical-align:middle"></i> ${item.pulse} bpm 
+                        <small class="pulse-tag ${pulseInter.class}" data-i18n="${pulseInter.id}">${t(pulseInter.id)}</small>
+                    </div>
+                    ${item.meds ? `<div class="meds-indicator" data-i18n="meds-taken">${t('meds-taken')}</div>` : ''}
                 </div>
                 <div class="status-tag">${t(inter.id)}</div>
+                ${item.notes ? `<div class="history-notes">"${item.notes}"</div>` : ''}
             `;
             listContainer.appendChild(card);
         });
