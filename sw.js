@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tensiometro-v1';
+const CACHE_NAME = 'tensiometro-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,7 @@ const ASSETS = [
   './main.js',
   './logic.js',
   './i18n.js',
+  './icon-192.png',
   './icon-512.png',
   'https://unpkg.com/lucide@latest',
   'https://cdn.jsdelivr.net/npm/chart.js',
