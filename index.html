@@ -229,7 +229,30 @@
                             <button type="submit" class="btn primary" data-i18n="save-profile">Guardar Perfil</button>
                         </div>
                     </form>
-                    <hr style="margin: 20px 0; opacity: 0.1">
+                    
+                    <hr style="margin: 25px 0; opacity: 0.1">
+                    <div class="settings-section">
+                        <h3 data-i18n="alerts-title" style="margin-bottom:15px; font-size:1.1rem; color:var(--text-primary)">Alertas y Recordatorios</h3>
+                        <div class="input-group">
+                            <label for="input-reminder-time" data-i18n="reminder-time">Hora del recordatorio (Diario)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="time" id="input-reminder-time" style="flex:1" value="08:00">
+                                <button id="btn-set-reminder" class="btn primary" data-i18n="set-reminder" style="padding: 0 15px;">Programar</button>
+                            </div>
+                            <small data-i18n="reminder-desc" style="display:block; margin-top:8px;">Abre tu calendario para programar una alarma diaria.</small>
+                        </div>
+                    </div>
+
+                    <hr style="margin: 25px 0; opacity: 0.1">
+                    <div class="settings-section">
+                        <h3 data-i18n="import-title" style="margin-bottom:15px; font-size:1.1rem; color:var(--text-primary)">Importar Datos</h3>
+                        <div class="input-group">
+                            <label for="input-import-csv" data-i18n="import-desc">Restaurar historial desde archivo CSV:</label>
+                            <input type="file" id="input-import-csv" accept=".csv" style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; width: 100%; border: 1px solid var(--card-border); color: white;">
+                        </div>
+                    </div>
+
+                    <hr style="margin: 25px 0; opacity: 0.1">
                     <button id="btn-logout" class="btn secondary" style="width:100%; border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;" data-i18n="logout">Cerrar Sesión / Cambiar</button>
                 </div>
             </section>

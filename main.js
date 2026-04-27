@@ -66,6 +66,26 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-back-to-dash-stats').addEventListener('click', () => switchView('dashboard'));
     document.getElementById('btn-export-csv').addEventListener('click', () => Storage.exportCSV());
 
+    document.getElementById('btn-set-reminder').addEventListener('click', () => {
+        const timeVal = document.getElementById('input-reminder-time').value;
+        if (timeVal) {
+            Storage.generateCalendarReminder(timeVal);
+            alert(currentLang === 'es' ? 'Se descargó la invitación del calendario. Ábrela para guardar tu recordatorio.' : 'Calendar invite downloaded. Open it to save your reminder.');
+        }
+    });
+
+    document.getElementById('input-import-csv').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            Storage.importCSV(file, (count) => {
+                alert(currentLang === 'es' ? `Se importaron ${count} registros nuevos.` : `Imported ${count} new records.`);
+                updateDashboard();
+                if (currentActiveView === 'history') updateHistoryList();
+                e.target.value = ''; // Limpiar input
+            });
+        }
+    });
+
     document.getElementById('btn-logout').addEventListener('click', () => {
         Storage.logout();
         showProfileSelect();

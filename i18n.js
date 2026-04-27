@@ -54,6 +54,12 @@ const translations = {
         "pulse-brady": "BRADICARDIA (Lento)",
         "pulse-normal": "Normal",
         "pulse-tachy": "TAQUICARDIA (Rápido)",
+        "alerts-title": "Alertas y Recordatorios",
+        "reminder-time": "Hora del recordatorio (Diario)",
+        "set-reminder": "Programar",
+        "reminder-desc": "Abre tu calendario para programar una alarma diaria.",
+        "import-title": "Importar Datos",
+        "import-desc": "Restaurar historial desde archivo CSV:",
     },
     en: {
         "app-title": "BP Tracker",
@@ -110,6 +116,12 @@ const translations = {
         "pulse-brady": "BRADYCARDIA (Slow)",
         "pulse-normal": "Normal",
         "pulse-tachy": "TACHYCARDIA (Fast)",
+        "alerts-title": "Alerts & Reminders",
+        "reminder-time": "Reminder time (Daily)",
+        "set-reminder": "Setup",
+        "reminder-desc": "Open your calendar to schedule a daily alarm.",
+        "import-title": "Import Data",
+        "import-desc": "Restore history from CSV file:",
     }
 };
 

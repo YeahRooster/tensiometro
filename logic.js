@@ -121,9 +121,11 @@ const Storage = {
         const history = this.getHistory();
         if (history.length === 0) return;
 
-        let csv = 'Fecha,Sistólica(SYS),Diastólica(DIA),Pulso(BPM),Medicación\n';
+        let csv = 'Fecha,Sistólica(SYS),Diastólica(DIA),Pulso(BPM),Medicación,Notas\n';
         history.forEach(r => {
-            csv += `${r.date},${r.sys},${r.dia},${r.pulse},${r.meds ? 'SÍ' : 'NO'}\n`;
+            // Limpiar comas de las notas para no romper el CSV
+            const safeNotes = r.notes ? r.notes.replace(/,/g, ';') : '';
+            csv += `${r.date},${r.sys},${r.dia},${r.pulse},${r.meds ? 'SÍ' : 'NO'},${safeNotes}\n`;
         });
 
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -131,6 +133,89 @@ const Storage = {
         link.href = URL.createObjectURL(blob);
         const name = profile ? profile.name.replace(/\s+/g, '_') : 'usuario';
         link.setAttribute('download', `reporte_${name}_${new Date().toLocaleDateString()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    },
+    importCSV(file, callback) {
+        const id = this.getCurrentUserId();
+        if (!id) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const text = e.target.result;
+            const lines = text.split('\n');
+            const history = this.getHistory();
+            let importedCount = 0;
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cols = lines[i].split(',');
+                if (cols.length >= 4) {
+                    const date = cols[0];
+                    const sys = parseInt(cols[1]);
+                    const dia = parseInt(cols[2]);
+                    const pulse = parseInt(cols[3]);
+                    const meds = cols[4] ? cols[4].trim() === 'SÍ' : false;
+                    const notes = cols[5] ? cols[5].trim() : '';
+                    
+                    // Evitar duplicados exactos
+                    const exists = history.some(r => r.date === date && r.sys === sys && r.dia === dia);
+                    if (!exists && !isNaN(sys) && !isNaN(dia)) {
+                        history.push({ id: Date.now() + i, date, sys, dia, pulse, meds, notes });
+                        importedCount++;
+                    }
+                }
+            }
+            
+            // Ordenar por fecha rudimentariamente (asumiendo que las más nuevas deberían ir primero)
+            history.reverse();
+            
+            localStorage.setItem(`history_${id}`, JSON.stringify(history));
+            if(callback) callback(importedCount);
+        };
+        reader.readAsText(file);
+    },
+    generateCalendarReminder(timeStr) {
+        const [hours, minutes] = timeStr.split(':');
+        const now = new Date();
+        let start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), 0);
+        
+        if (start < now) {
+            start.setDate(start.getDate() + 1); // Mañana
+        }
+        
+        const formatICSDate = (date) => {
+            return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+        
+        const end = new Date(start.getTime() + 15 * 60000); // 15 mins después
+        
+        const icsContent = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//Tensiometro Premium//ES',
+            'BEGIN:VEVENT',
+            `UID:${Date.now()}@tensiometro`,
+            `DTSTAMP:${formatICSDate(now)}`,
+            `DTSTART:${formatICSDate(start)}`,
+            `DTEND:${formatICSDate(end)}`,
+            'RRULE:FREQ=DAILY',
+            'SUMMARY:Control de Presión Arterial',
+            'DESCRIPTION:Recordatorio diario para tomarte la presión arterial en Tensiometro Premium.',
+            'BEGIN:VALARM',
+            'TRIGGER:-PT0M',
+            'ACTION:DISPLAY',
+            'DESCRIPTION:Control de Presión Arterial',
+            'END:VALARM',
+            'END:VEVENT',
+            'END:VCALENDAR'
+        ].join('\r\n');
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', 'recordatorio_presion.ics');
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
