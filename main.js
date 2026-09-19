@@ -3,9 +3,9 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
 
     // Registrar Service Worker (PWA)
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js').then(reg => {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
                 console.log('Service Worker registrado con éxito:', reg.scope);
             }).catch(err => {
                 console.log('Error al registrar Service Worker:', err);
