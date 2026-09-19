@@ -24,6 +24,9 @@
     
     <!-- Chart.js (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Tesseract.js (CDN para OCR Local y Privado) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
 <body>
     <!-- Fondo decorativo con gradientes suaves -->
@@ -124,6 +127,30 @@
             <section id="view-form" class="view hidden">
                 <div class="form-card glass">
                     <h2 data-i18n="new-record-title">Nueva Medición</h2>
+                    
+                    <!-- Botón de Escaneo con Cámara / Foto -->
+                    <div class="ocr-scan-section">
+                        <input type="file" id="input-camera" accept="image/*" capture="environment" class="hidden">
+                        <button type="button" id="btn-scan-camera" class="btn-scan-camera glass">
+                            <i data-lucide="camera" class="icon-camera-scan"></i>
+                            <span data-i18n="btn-scan-photo">Escanear con Foto</span>
+                        </button>
+                        <small class="scan-tip" data-i18n="scan-tip">Toma la foto de frente a la pantalla y con buena luz</small>
+                    </div>
+
+                    <!-- Panel de estado del escaneo OCR -->
+                    <div id="ocr-status-card" class="ocr-status-card glass hidden">
+                        <div class="ocr-status-header">
+                            <div class="ocr-spinner" id="ocr-spinner"></div>
+                            <i data-lucide="check-circle-2" id="ocr-icon-success" class="ocr-icon-status hidden"></i>
+                            <i data-lucide="alert-circle" id="ocr-icon-error" class="ocr-icon-status hidden"></i>
+                            <span id="ocr-status-text" data-i18n="scan-status-init">Iniciando escáner...</span>
+                        </div>
+                        <div class="ocr-progress-bar-bg" id="ocr-progress-bg">
+                            <div class="ocr-progress-bar" id="ocr-progress-bar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
                     <form id="bp-form">
                         <div class="input-group">
                             <label for="input-sys" data-i18n="label-sys">Sistólica (SYS)</label>

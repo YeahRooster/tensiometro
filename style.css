@@ -669,3 +669,131 @@ small {
     .value-block .value { font-size: 2.8rem; }
     .actions-grid { grid-template-columns: 1fr; }
 }
+
+/* OCR Camera Scanner Styles */
+.ocr-scan-section {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-scan-camera {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.2));
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);
+}
+
+.btn-scan-camera:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(129, 140, 248, 0.3));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(56, 189, 248, 0.25);
+}
+
+.icon-camera-scan {
+    color: var(--primary);
+    width: 24px;
+    height: 24px;
+}
+
+.scan-tip {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+/* OCR Status Card */
+.ocr-status-card {
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    animation: fadeIn 0.3s ease;
+}
+
+.ocr-status-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.ocr-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(56, 189, 248, 0.2);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.ocr-icon-status {
+    width: 22px;
+    height: 22px;
+}
+
+#ocr-icon-success {
+    color: var(--status-normal);
+}
+
+#ocr-icon-error {
+    color: var(--status-stage2);
+}
+
+.ocr-progress-bar-bg {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.ocr-progress-bar {
+    height: 100%;
+    background: linear-gradient(to right, var(--primary), #818cf8);
+    transition: width 0.2s ease;
+    border-radius: 99px;
+}
+
+/* Animación de destello en casilleros rellenados */
+.ocr-field-detected {
+    animation: pulseField 1.2s ease-out;
+    border-color: var(--status-normal) !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.3) !important;
+}
+
+@keyframes pulseField {
+    0% {
+        transform: scale(1);
+        background-color: rgba(16, 185, 129, 0.2);
+    }
+    50% {
+        transform: scale(1.02);
+        background-color: rgba(16, 185, 129, 0.3);
+    }
+    100% {
+        transform: scale(1);
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+}
+

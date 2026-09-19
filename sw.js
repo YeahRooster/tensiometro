@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tensiometro-v2';
+const CACHE_NAME = 'tensiometro-v3';
 const ASSETS = [
   './',
   './index.html',

@@ -221,3 +221,152 @@ const Storage = {
         document.body.removeChild(link);
     }
 };
+
+/**
+ * Preprocesa una imagen en un canvas para optimizar la lectura de dígitos de pantallas LCD
+ * @param {HTMLImageElement} img - Elemento de imagen cargado
+ * @returns {HTMLCanvasElement} Canvas optimizado con contraste aumentado
+ */
+function preprocessImageForOCR(img) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    
+    let width = img.naturalWidth || img.width;
+    let height = img.naturalHeight || img.height;
+    
+    // Escalar si es muy grande para no ralentizar el celular
+    const maxDim = 1200;
+    if (width > maxDim || height > maxDim) {
+        if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+        } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+        }
+    }
+    
+    canvas.width = width;
+    canvas.height = height;
+    ctx.drawImage(img, 0, 0, width, height);
+    
+    try {
+        const imgData = ctx.getImageData(0, 0, width, height);
+        const data = imgData.data;
+        
+        // Calcular luminancia promedio
+        let totalLum = 0;
+        const totalPixels = data.length / 4;
+        for (let i = 0; i < data.length; i += 4) {
+            totalLum += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        }
+        const avgLum = totalLum / totalPixels;
+        
+        // Aumentar contraste para resaltar los segmentos oscuros del LCD
+        const contrastFactor = 1.8;
+        for (let i = 0; i < data.length; i += 4) {
+            const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            // Estiramiento de contraste centrado en la luminancia media
+            let enhanced = (gray - avgLum) * contrastFactor + avgLum;
+            enhanced = Math.max(0, Math.min(255, enhanced));
+            
+            data[i] = enhanced;
+            data[i + 1] = enhanced;
+            data[i + 2] = enhanced;
+        }
+        ctx.putImageData(imgData, 0, 0);
+    } catch (e) {
+        console.warn('No se pudo aplicar filtro de contraste, se usará imagen original:', e);
+    }
+    
+    return canvas;
+}
+
+/**
+ * Analiza el texto reconocido por OCR y extrae Sistólica, Diastólica y Pulso
+ * @param {string} text - Texto en bruto devuelto por Tesseract
+ * @returns {object} { sys: number|null, dia: number|null, pulse: number|null }
+ */
+function extractBPFromOCRText(text) {
+    if (!text) return { sys: null, dia: null, pulse: null };
+
+    let sys = null;
+    let dia = null;
+    let pulse = null;
+
+    // Normalizar texto
+    const cleanText = text.replace(/[–—_]/g, '-');
+    const lines = cleanText.split('\n').map(l => l.trim()).filter(Boolean);
+
+    // Estrategia 1: Búsqueda con etiquetas explícitas (SYS, DIA, PUL / PULSE)
+    for (const line of lines) {
+        if (sys === null) {
+            const mSys = line.match(/(?:sys|sist|max|pas|ps)[\s:.-]*([0-9]{2,3})/i);
+            if (mSys) {
+                const val = parseInt(mSys[1], 10);
+                if (val >= 70 && val <= 250) sys = val;
+            }
+        }
+        if (dia === null) {
+            const mDia = line.match(/(?:dia|diast|min|pad|pd)[\s:.-]*([0-9]{2,3})/i);
+            if (mDia) {
+                const val = parseInt(mDia[1], 10);
+                if (val >= 40 && val <= 140) dia = val;
+            }
+        }
+        if (pulse === null) {
+            const mPul = line.match(/(?:pul|pulse|bpm|lat|pr|hr)[\s:.-]*([0-9]{2,3})/i);
+            if (mPul) {
+                const val = parseInt(mPul[1], 10);
+                if (val >= 35 && val <= 220) pulse = val;
+            }
+        }
+    }
+
+    // Estrategia 2: Extraer todos los números candidatos encontrados en el orden visual de arriba a abajo
+    const allNumbers = [];
+    for (const line of lines) {
+        // Encontrar secuencias de 2 a 3 dígitos (evitar fechas o horas tipo 2026 o 12:30)
+        const matches = line.match(/\b\d{2,3}\b/g);
+        if (matches) {
+            for (const m of matches) {
+                const num = parseInt(m, 10);
+                // Filtrar rangos médicamente plausibles para tensiómetros
+                if (num >= 35 && num <= 260) {
+                    allNumbers.push(num);
+                }
+            }
+        }
+    }
+
+    // Si aún nos faltan valores de presión y tenemos números candidatos:
+    if (sys === null || dia === null) {
+        if (allNumbers.length >= 2) {
+            let n1 = allNumbers[0];
+            let n2 = allNumbers[1];
+            // En tensiómetros la sistólica siempre es mayor que la diastólica
+            if (n1 < n2) {
+                const temp = n1;
+                n1 = n2;
+                n2 = temp;
+            }
+            if (sys === null && n1 >= 70 && n1 <= 260) sys = n1;
+            if (dia === null && n2 >= 35 && n2 <= 140) dia = n2;
+
+            if (pulse === null && allNumbers.length >= 3) {
+                const n3 = allNumbers[2];
+                if (n3 >= 35 && n3 <= 220) pulse = n3;
+            }
+        }
+    }
+
+    // Verificación final de consistencia
+    if (sys !== null && dia !== null && dia >= sys) {
+        const temp = sys;
+        sys = dia;
+        dia = temp;
+    }
+
+    return { sys, dia, pulse };
+}
+

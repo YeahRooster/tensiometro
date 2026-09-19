@@ -60,6 +60,14 @@ const translations = {
         "reminder-desc": "Abre tu calendario para programar una alarma diaria.",
         "import-title": "Importar Datos",
         "import-desc": "Restaurar historial desde archivo CSV:",
+        "btn-scan-photo": "Escanear Pantalla con Foto",
+        "scan-tip": "Toma la foto de frente a la pantalla y con buena luz",
+        "scan-status-init": "Iniciando escáner...",
+        "scan-status-loading": "Cargando lector...",
+        "scan-status-processing": "Leyendo números de la pantalla...",
+        "scan-status-success": "¡Valores detectados! Revisa y confirma.",
+        "scan-status-partial": "Se detectaron algunos valores. Completa los restantes.",
+        "scan-status-error": "No se detectaron números claros. Intenta de frente o con más luz.",
     },
     en: {
         "app-title": "BP Tracker",
@@ -122,6 +130,14 @@ const translations = {
         "reminder-desc": "Open your calendar to schedule a daily alarm.",
         "import-title": "Import Data",
         "import-desc": "Restore history from CSV file:",
+        "btn-scan-photo": "Scan Screen with Photo",
+        "scan-tip": "Take photo straight-on with good lighting",
+        "scan-status-init": "Starting scanner...",
+        "scan-status-loading": "Loading reader...",
+        "scan-status-processing": "Reading screen numbers...",
+        "scan-status-success": "Values detected! Review and confirm.",
+        "scan-status-partial": "Some values detected. Please fill in the rest.",
+        "scan-status-error": "Could not detect clear numbers. Try straight-on with better light.",
     }
 };
 

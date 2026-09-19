@@ -66,6 +66,137 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-back-to-dash-stats').addEventListener('click', () => switchView('dashboard'));
     document.getElementById('btn-export-csv').addEventListener('click', () => Storage.exportCSV());
 
+    // --- Escaneo con Cámara / OCR ---
+    const btnScanCamera = document.getElementById('btn-scan-camera');
+    const inputCamera = document.getElementById('input-camera');
+    const ocrStatusCard = document.getElementById('ocr-status-card');
+    const ocrStatusText = document.getElementById('ocr-status-text');
+    const ocrSpinner = document.getElementById('ocr-spinner');
+    const ocrIconSuccess = document.getElementById('ocr-icon-success');
+    const ocrIconError = document.getElementById('ocr-icon-error');
+    const ocrProgressBar = document.getElementById('ocr-progress-bar');
+    const ocrProgressBg = document.getElementById('ocr-progress-bg');
+
+    if (btnScanCamera && inputCamera) {
+        btnScanCamera.addEventListener('click', () => {
+            inputCamera.click();
+        });
+
+        inputCamera.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+
+            // Mostrar tarjeta de estado y reiniciar barra
+            ocrStatusCard.classList.remove('hidden');
+            ocrSpinner.classList.remove('hidden');
+            ocrIconSuccess.classList.add('hidden');
+            ocrIconError.classList.add('hidden');
+            ocrProgressBg.classList.remove('hidden');
+            ocrProgressBar.style.width = '10%';
+            ocrStatusText.innerText = t('scan-status-loading');
+
+            try {
+                // Crear objeto de imagen temporal en memoria RAM (no en almacenamiento permanente)
+                const tempUrl = URL.createObjectURL(file);
+                const img = new Image();
+                
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = tempUrl;
+                });
+
+                // Liberar inmediatamente el blob URL de memoria
+                URL.revokeObjectURL(tempUrl);
+
+                ocrProgressBar.style.width = '30%';
+                ocrStatusText.innerText = t('scan-status-processing');
+
+                // Preprocesar imagen en canvas optimizado
+                const processedCanvas = preprocessImageForOCR(img);
+
+                // Ejecutar reconocimiento Tesseract local
+                if (typeof Tesseract === 'undefined') {
+                    throw new Error('Tesseract library not loaded');
+                }
+
+                const worker = await Tesseract.recognize(processedCanvas, 'eng', {
+                    logger: (m) => {
+                        if (m.status === 'recognizing text' && m.progress) {
+                            const percent = Math.min(95, 30 + Math.round(m.progress * 65));
+                            ocrProgressBar.style.width = percent + '%';
+                        }
+                    }
+                });
+
+                const rawText = (worker && worker.data && worker.data.text) ? worker.data.text : '';
+                console.log('Texto reconocido por OCR:', rawText);
+
+                // Extraer Sistólica, Diastólica y Pulso
+                const { sys, dia, pulse } = extractBPFromOCRText(rawText);
+
+                // Destruir canvas para asegurar liberación de memoria RAM
+                processedCanvas.width = 1;
+                processedCanvas.height = 1;
+
+                // Limpiar el input para no conservar ninguna copia en memoria del navegador
+                inputCamera.value = '';
+
+                let detectedCount = 0;
+                const sysInput = document.getElementById('input-sys');
+                const diaInput = document.getElementById('input-dia');
+                const pulseInput = document.getElementById('input-pulse');
+
+                if (sys) {
+                    sysInput.value = sys;
+                    highlightField(sysInput);
+                    detectedCount++;
+                }
+                if (dia) {
+                    diaInput.value = dia;
+                    highlightField(diaInput);
+                    detectedCount++;
+                }
+                if (pulse) {
+                    pulseInput.value = pulse;
+                    highlightField(pulseInput);
+                    detectedCount++;
+                }
+
+                ocrSpinner.classList.add('hidden');
+                ocrProgressBg.classList.add('hidden');
+
+                if (detectedCount >= 2) {
+                    ocrIconSuccess.classList.remove('hidden');
+                    ocrStatusText.innerText = (detectedCount === 3) 
+                        ? t('scan-status-success') 
+                        : t('scan-status-partial');
+                    
+                    // Ocultar notificación tras 4.5 segundos si fue exitoso
+                    setTimeout(() => {
+                        ocrStatusCard.classList.add('hidden');
+                    }, 4500);
+                } else {
+                    ocrIconError.classList.remove('hidden');
+                    ocrStatusText.innerText = t('scan-status-error');
+                }
+            } catch (err) {
+                console.error('Error durante el escaneo OCR:', err);
+                inputCamera.value = '';
+                ocrSpinner.classList.add('hidden');
+                ocrProgressBg.classList.add('hidden');
+                ocrIconError.classList.remove('hidden');
+                ocrStatusText.innerText = t('scan-status-error');
+            }
+        });
+    }
+
+    function highlightField(inputEl) {
+        inputEl.classList.remove('ocr-field-detected');
+        void inputEl.offsetWidth; // Forzar reflow para reiniciar animación
+        inputEl.classList.add('ocr-field-detected');
+    }
+
     document.getElementById('btn-set-reminder').addEventListener('click', () => {
         const timeVal = document.getElementById('input-reminder-time').value;
         if (timeVal) {
