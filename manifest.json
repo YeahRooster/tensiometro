@@ -1,12 +1,20 @@
 {
+  "id": "com.yeahrooster.tensiometro",
   "name": "Tensiometro Premium",
   "short_name": "Tensiometro",
   "description": "Lleva un control profesional de tu presión arterial con estándares de la AHA.",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#38bdf8",
   "orientation": "portrait",
+  "lang": "es",
+  "categories": [
+    "health",
+    "medical",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
