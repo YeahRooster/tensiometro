@@ -1,15 +1,17 @@
 {
-  "id": "com.yeahrooster.tensiometro",
+  "id": "https://tensiometro.vercel.app/",
   "name": "Tensiometro Premium",
   "short_name": "Tensiometro",
   "description": "Lleva un control profesional de tu presión arterial con estándares de la AHA.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#38bdf8",
   "orientation": "portrait",
   "lang": "es",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "categories": [
     "health",
     "medical",
@@ -17,16 +19,57 @@
   ],
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nueva Medición",
+      "url": "/",
+      "description": "Anotar una nueva toma de presión arterial",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Tensiometro en móvil"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tensiometro en escritorio"
     }
   ]
 }
