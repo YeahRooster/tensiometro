@@ -2,15 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicializar Iconos
     lucide.createIcons();
 
-    // Registrar Service Worker (PWA)
+    // Registrar Service Worker (PWA) de inmediato para máxima compatibilidad con PWABuilder
     if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(reg => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => {
                 console.log('Service Worker registrado con éxito:', reg.scope);
-            }).catch(err => {
+            })
+            .catch(err => {
                 console.log('Error al registrar Service Worker:', err);
             });
-        });
     }
 
     // Referencias DOM

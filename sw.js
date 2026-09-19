@@ -1,43 +1,67 @@
-const CACHE_NAME = 'tensiometro-v3';
-const ASSETS = [
-  './',
-  './index.html',
-  './style.css',
-  './main.js',
-  './logic.js',
-  './i18n.js',
-  './icon-192.png',
-  './icon-512.png',
-  'https://unpkg.com/lucide@latest',
-  'https://cdn.jsdelivr.net/npm/chart.js',
-  'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Inter:wght@400;500;600&display=swap'
+const CACHE_NAME = 'tensiometro-v4';
+const PRECACHE_ASSETS = [
+  '/',
+  '/index.html',
+  '/style.css',
+  '/main.js',
+  '/logic.js',
+  '/i18n.js',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
-// Instalación: Guardar archivos en caché
+// Instalación: Guardar archivos esenciales y activar inmediatamente
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
+      return cache.addAll(PRECACHE_ASSETS);
     })
   );
 });
 
-// Activación: Limpiar cachés antiguas
+// Activación: Reclamar control de clientes y limpiar cachés anteriores
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then((keys) => {
+        return Promise.all(
+          keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        );
+      })
+    ])
   );
 });
 
-// Peticiones: Responder desde caché si es posible
+// Manejador de peticiones (estrategia Cache-first con Network fallback)
 self.addEventListener('fetch', (event) => {
+  // Solo manejar peticiones GET
+  if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+
+      return fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Si no hay conexión y es una navegación de página, servir la app
+          if (event.request.mode === 'navigate') {
+            return caches.match('/');
+          }
+        });
     })
   );
 });

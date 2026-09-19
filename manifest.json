@@ -6,12 +6,26 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#0f172a",
   "theme_color": "#38bdf8",
   "orientation": "portrait",
   "lang": "es",
   "dir": "ltr",
   "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.yeahrooster.tensiometro"
+    }
+  ],
+  "edge_side_panel": {
+    "preferred_width": 480
+  },
   "categories": [
     "health",
     "medical",
