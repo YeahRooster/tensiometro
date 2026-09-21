@@ -13,3 +13,7 @@ tmp/
 # Git ignore para Tensiometro
 node_modules/
 dist/
+*.zip
+*.apk
+*.aab
+*.keystore
