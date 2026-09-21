@@ -112,14 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 ocrProgressBar.style.width = '30%';
                 ocrStatusText.innerText = t('scan-status-processing');
 
-                // Ejecutar reconocimiento Tesseract local con parámetros optimizados
                 if (typeof Tesseract === 'undefined') {
                     throw new Error('Tesseract library not loaded');
                 }
 
-                const ocrOptions = {
-                    tessedit_char_whitelist: '0123456789SYSDIAPULMmhgbp',
-                    tessedit_pageseg_mode: '6',
+                const tesseractConfig = {
                     logger: (m) => {
                         if (m.status === 'recognizing text' && m.progress) {
                             const percent = Math.min(95, 30 + Math.round(m.progress * 65));
@@ -128,22 +125,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
 
-                // Intento 1: Pantalla centrada con dilatación de segmentos LCD
-                let processedCanvas = preprocessImageForOCR(img, true);
-                let worker = await Tesseract.recognize(processedCanvas, 'eng', ocrOptions);
+                // Intento 1: Imagen con contraste sigmoide normalizado
+                let processedCanvas = preprocessImageForOCR(img);
+                let worker = await Tesseract.recognize(processedCanvas, 'eng', tesseractConfig);
                 let rawText = (worker && worker.data && worker.data.text) ? worker.data.text : '';
-                console.log('OCR Intento 1 (Enfocado):', rawText);
+                console.log('OCR Intento 1 (Contraste):', rawText);
                 let result = extractBPFromOCRText(rawText);
 
-                // Intento 2: Si no detectó los valores principales, probar con encuadre completo
+                // Intento 2: Si no detectó los valores principales, probar directamente con la imagen original
                 if (!result.sys || !result.dia) {
                     ocrProgressBar.style.width = '65%';
-                    processedCanvas.width = 1;
-                    processedCanvas.height = 1;
-                    processedCanvas = preprocessImageForOCR(img, false);
-                    worker = await Tesseract.recognize(processedCanvas, 'eng', ocrOptions);
+                    worker = await Tesseract.recognize(img, 'eng', tesseractConfig);
                     const rawText2 = (worker && worker.data && worker.data.text) ? worker.data.text : '';
-                    console.log('OCR Intento 2 (Completo):', rawText2);
+                    console.log('OCR Intento 2 (Original):', rawText2);
                     const result2 = extractBPFromOCRText(rawText2);
                     if (!result.sys && result2.sys) result.sys = result2.sys;
                     if (!result.dia && result2.dia) result.dia = result2.dia;

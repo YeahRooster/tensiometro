@@ -324,121 +324,98 @@ function parseDateToTimestamp(dateStr) {
 
 /**
  * Preprocesa una imagen para lectura óptima de pantallas LCD de tensiómetros:
- * - Opcional recorte del centro de la pantalla
- * - Binarización adaptativa blanco y negro
- * - Dilatación morfológica que une las rayitas separadas de los dígitos de 7 segmentos
+ * - Redimensionamiento a escala óptima para Tesseract
+ * - Normalización de contraste sigmoide para destacar dígitos sin tapar los huecos del 8 y 0
  * @param {HTMLImageElement} img - Imagen cargada
- * @param {boolean} cropCenter - Si es true, recorta el área central de la pantalla
  * @returns {HTMLCanvasElement} Canvas preparado para Tesseract
  */
-function preprocessImageForOCR(img, cropCenter = true) {
+function preprocessImageForOCR(img) {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     
     const origWidth = img.naturalWidth || img.width;
     const origHeight = img.naturalHeight || img.height;
     
-    // Si se recorta el centro, enfocamos el 75% central donde se encuentra la pantalla
-    let srcX = 0, srcY = 0, srcW = origWidth, srcH = origHeight;
-    if (cropCenter && origWidth > 400 && origHeight > 400) {
-        srcW = Math.round(origWidth * 0.75);
-        srcH = Math.round(origHeight * 0.75);
-        srcX = Math.round((origWidth - srcW) / 2);
-        srcY = Math.round((origHeight - srcH) / 2);
-    }
-    
-    // Escalar para procesamiento rápido y óptimo en móvil (ancho ideal ~800px)
-    const targetWidth = 800;
-    const scale = targetWidth / srcW;
-    const targetHeight = Math.round(srcH * scale);
+    // Escalar a ancho óptimo (entre 900 y 1200px)
+    const targetWidth = Math.min(1200, Math.max(700, origWidth));
+    const scale = targetWidth / origWidth;
+    const targetHeight = Math.round(origHeight * scale);
     
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     
-    // Dibujar área seleccionada
-    ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, targetWidth, targetHeight);
+    // Dibujar imagen
+    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
     
     try {
         const imgData = ctx.getImageData(0, 0, targetWidth, targetHeight);
         const data = imgData.data;
         const totalPixels = targetWidth * targetHeight;
         
-        // Paso 1: Convertir a escala de grises y calcular histograma
-        const grayValues = new Uint8Array(totalPixels);
-        let sumLum = 0;
+        // Paso 1: Escala de grises y búsqueda de luminancia mínima y máxima
+        let minLum = 255;
+        let maxLum = 0;
+        const gray = new Uint8Array(totalPixels);
+        
         for (let i = 0; i < totalPixels; i++) {
             const idx = i * 4;
             const lum = Math.round(0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2]);
-            grayValues[i] = lum;
-            sumLum += lum;
-        }
-        const meanLum = sumLum / totalPixels;
-        
-        // Paso 2: Binarización adaptativa
-        // En pantallas LCD típicas, los dígitos son más oscuros que el fondo medio
-        const threshold = Math.max(50, Math.min(200, meanLum - 15));
-        
-        let darkPixelCount = 0;
-        const binaryMask = new Uint8Array(totalPixels);
-        for (let i = 0; i < totalPixels; i++) {
-            if (grayValues[i] < threshold) {
-                binaryMask[i] = 1; // Segmento de dígito oscuro
-                darkPixelCount++;
-            } else {
-                binaryMask[i] = 0; // Fondo
-            }
+            gray[i] = lum;
+            if (lum < minLum) minLum = lum;
+            if (lum > maxLum) maxLum = lum;
         }
         
-        // Si más del 60% de los píxeles son oscuros, la pantalla es invertida (números blancos sobre fondo negro)
-        const isInvertedScreen = (darkPixelCount / totalPixels) > 0.60;
-        if (isInvertedScreen) {
-            for (let i = 0; i < totalPixels; i++) {
-                binaryMask[i] = binaryMask[i] ? 0 : 1;
-            }
-        }
+        const range = maxLum - minLum || 1;
         
-        // Paso 3: Dilatación morfológica (Cierre de segmentos LCD)
-        // Engrosa los segmentos 2 píxeles en cruz para cerrar las separaciones entre rayitas
-        const dilatedMask = new Uint8Array(totalPixels);
-        dilatedMask.set(binaryMask);
-        
-        const radius = 2;
-        for (let y = radius; y < targetHeight - radius; y++) {
-            for (let x = radius; x < targetWidth - radius; x++) {
-                const idx = y * targetWidth + x;
-                if (binaryMask[idx] === 1) {
-                    for (let dy = -radius; dy <= radius; dy++) {
-                        for (let dx = -radius; dx <= radius; dx++) {
-                            dilatedMask[(y + dy) * targetWidth + (x + dx)] = 1;
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Paso 4: Escribir resultado a canvas (Dígitos en negro puro, fondo en blanco puro)
-        // Tesseract requiere texto oscuro sobre fondo blanco
+        // Paso 2: Normalización y curva de contraste para acentuar dígitos sin tapar agujeros
         for (let i = 0; i < totalPixels; i++) {
             const idx = i * 4;
-            const isDigit = dilatedMask[i] === 1;
-            const color = isDigit ? 0 : 255;
-            data[idx] = color;
-            data[idx + 1] = color;
-            data[idx + 2] = color;
+            const norm = (gray[i] - minLum) / range;
+            // Curva de contraste sigmoide suave
+            const enhanced = Math.round(255 / (1 + Math.exp(-6 * (norm - 0.5))));
+            
+            data[idx] = enhanced;
+            data[idx + 1] = enhanced;
+            data[idx + 2] = enhanced;
             data[idx + 3] = 255;
         }
         
         ctx.putImageData(imgData, 0, 0);
     } catch (e) {
-        console.warn('Filtro avanzado no disponible, usando canvas estándar:', e);
+        console.warn('Filtro de contraste falló, usando canvas estándar:', e);
     }
     
     return canvas;
 }
 
 /**
+ * Limpia y normaliza una línea de texto de OCR uniendo dígitos separados por espacios ('1 2 0' -> '120')
+ */
+function cleanLineForDigits(line) {
+    if (!line) return '';
+    let s = line;
+    // Unir dígitos con espacios en medio: '1 2 0' -> '120', '8 0' -> '80'
+    for (let k = 0; k < 4; k++) {
+        s = s.replace(/(\d)\s+(\d)/g, '$1$2');
+        s = s.replace(/([0-9OIlZSB])\s+([0-9OIlZSB])/gi, '$1$2');
+    }
+    // Reemplazar letras aisladas o pegadas a dígitos que son en realidad números (evitando barra '/')
+    s = s.replace(/(?<=\d)[OoD]/g, '0')
+         .replace(/[OoD](?=\d)/g, '0')
+         .replace(/(?<=\d)[Il|!\\]/g, '1')
+         .replace(/[Il|!\\](?=\d)/g, '1')
+         .replace(/(?<=\d)[Zz]/g, '2')
+         .replace(/[Zz](?=\d)/g, '2')
+         .replace(/(?<=\d)[Ss]/g, '5')
+         .replace(/[Ss](?=\d)/g, '5')
+         .replace(/(?<=\d)[B]/g, '8')
+         .replace(/[B](?=\d)/g, '8');
+
+    return s;
+}
+
+/**
  * Analiza el texto reconocido por OCR y extrae Sistólica, Diastólica y Pulso
- * Incluye reemplazo inteligente de caracteres comúnmente confundidos con números
  * @param {string} text - Texto en bruto devuelto por Tesseract
  * @returns {object} { sys: number|null, dia: number|null, pulse: number|null }
  */
@@ -449,42 +426,45 @@ function extractBPFromOCRText(text) {
     let dia = null;
     let pulse = null;
 
-    // Normalizar texto y separar por líneas
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const rawLines = text.split('\n');
+    const lines = rawLines.map(cleanLineForDigits).filter(Boolean);
 
-    // Estrategia 1: Búsqueda con etiquetas explícitas (SYS, DIA, PUL / PULSE)
+    // Estrategia 1: Búsqueda con etiquetas explícitas (SYS, DIA, PUL / BPM) antes O después del número
     for (const line of lines) {
         if (sys === null) {
-            const mSys = line.match(/(?:sys|sist|max|pas|ps)[\s:.-]*([0-9OIlZABSTbq]{2,3})/i);
+            const mSys = line.match(/(?:sys|sist|max|pas|ps)[\s:.-]*([0-9]{2,3})/i) ||
+                         line.match(/([0-9]{2,3})[\s:.-]*(?:sys|sist|max|pas|ps|mm\s*hg)/i);
             if (mSys) {
-                const val = parseCleanDigitToken(mSys[1]);
+                const val = parseInt(mSys[1], 10);
                 if (val >= 70 && val <= 250) sys = val;
             }
         }
         if (dia === null) {
-            const mDia = line.match(/(?:dia|diast|min|pad|pd)[\s:.-]*([0-9OIlZABSTbq]{2,3})/i);
+            const mDia = line.match(/(?:dia|diast|min|pad|pd)[\s:.-]*([0-9]{2,3})/i) ||
+                         line.match(/([0-9]{2,3})[\s:.-]*(?:dia|diast|min|pad|pd)/i);
             if (mDia) {
-                const val = parseCleanDigitToken(mDia[1]);
+                const val = parseInt(mDia[1], 10);
                 if (val >= 40 && val <= 140) dia = val;
             }
         }
         if (pulse === null) {
-            const mPul = line.match(/(?:pul|pulse|bpm|lat|pr|hr)[\s:.-]*([0-9OIlZABSTbq]{2,3})/i);
+            const mPul = line.match(/(?:pul|pulse|bpm|lat|pr|hr)[\s:.-]*([0-9]{2,3})/i) ||
+                         line.match(/([0-9]{2,3})[\s:.-]*(?:pul|pulse|bpm|lat|pr|hr|\/min)/i);
             if (mPul) {
-                const val = parseCleanDigitToken(mPul[1]);
+                const val = parseInt(mPul[1], 10);
                 if (val >= 35 && val <= 220) pulse = val;
             }
         }
     }
 
-    // Estrategia 2: Extraer todos los números candidatos encontrados en el orden visual de arriba a abajo
+    // Estrategia 2: Extraer todos los números candidatos encontrados
     const allNumbers = [];
     for (const line of lines) {
-        // Encontrar tokens que contengan de 2 a 3 caracteres numéricos o letras confundibles
-        const tokens = line.split(/[\s/\\|,-]+/);
-        for (const token of tokens) {
-            if (token.length >= 2 && token.length <= 3) {
-                const num = parseCleanDigitToken(token);
+        // Encontrar secuencias de 2 a 3 dígitos (incluso si tienen unidades como 120mmHg o 80/120)
+        const matches = line.match(/\b\d{2,3}\b/g) || line.match(/\d{2,3}/g);
+        if (matches) {
+            for (const m of matches) {
+                const num = parseInt(m, 10);
                 if (!isNaN(num) && num >= 35 && num <= 260) {
                     allNumbers.push(num);
                 }
@@ -492,16 +472,14 @@ function extractBPFromOCRText(text) {
         }
     }
 
-    // Si aún nos faltan valores de presión y tenemos números candidatos:
+    // Si aún faltan valores y tenemos números candidatos en orden:
     if (sys === null || dia === null) {
         if (allNumbers.length >= 2) {
             let n1 = allNumbers[0];
             let n2 = allNumbers[1];
             // En tensiómetros la sistólica siempre es mayor que la diastólica
             if (n1 < n2) {
-                const temp = n1;
-                n1 = n2;
-                n2 = temp;
+                const temp = n1; n1 = n2; n2 = temp;
             }
             if (sys === null && n1 >= 70 && n1 <= 260) sys = n1;
             if (dia === null && n2 >= 35 && n2 <= 140) dia = n2;
@@ -511,37 +489,21 @@ function extractBPFromOCRText(text) {
                 if (n3 >= 35 && n3 <= 220) pulse = n3;
             }
         }
+    } else if (pulse === null && allNumbers.length >= 3) {
+        // Si ya teníamos sys y dia pero falta pulso, buscar el tercer número que no sea sys ni dia
+        const remaining = allNumbers.filter(n => n !== sys && n !== dia);
+        if (remaining.length > 0 && remaining[0] >= 35 && remaining[0] <= 220) {
+            pulse = remaining[0];
+        }
     }
 
-    // Verificación final de consistencia
+    // Verificación de coherencia
     if (sys !== null && dia !== null && dia >= sys) {
-        const temp = sys;
-        sys = dia;
-        dia = temp;
+        const temp = sys; sys = dia; dia = temp;
     }
 
     return { sys, dia, pulse };
 }
 
-/**
- * Limpia y convierte letras confundidas por el OCR en números reales
- */
-function parseCleanDigitToken(token) {
-    if (!token) return NaN;
-    const mapped = token
-        .replace(/[OoD]/g, '0')
-        .replace(/[Il|/!\\]/g, '1')
-        .replace(/[Zz]/g, '2')
-        .replace(/[E]/g, '3')
-        .replace(/[A]/g, '4')
-        .replace(/[Ss]/g, '5')
-        .replace(/[b]/g, '6')
-        .replace(/[Tt]/g, '7')
-        .replace(/[B]/g, '8')
-        .replace(/[gq]/g, '9');
-    
-    const num = parseInt(mapped, 10);
-    return isNaN(num) ? NaN : num;
-}
 
 
