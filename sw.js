@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tensiometro-v4';
+const CACHE_NAME = 'tensiometro-v5';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',

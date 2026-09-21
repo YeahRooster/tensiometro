@@ -112,30 +112,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 ocrProgressBar.style.width = '30%';
                 ocrStatusText.innerText = t('scan-status-processing');
 
-                // Preprocesar imagen en canvas optimizado
-                const processedCanvas = preprocessImageForOCR(img);
-
-                // Ejecutar reconocimiento Tesseract local
+                // Ejecutar reconocimiento Tesseract local con parámetros optimizados
                 if (typeof Tesseract === 'undefined') {
                     throw new Error('Tesseract library not loaded');
                 }
 
-                const worker = await Tesseract.recognize(processedCanvas, 'eng', {
+                const ocrOptions = {
+                    tessedit_char_whitelist: '0123456789SYSDIAPULMmhgbp',
+                    tessedit_pageseg_mode: '6',
                     logger: (m) => {
                         if (m.status === 'recognizing text' && m.progress) {
                             const percent = Math.min(95, 30 + Math.round(m.progress * 65));
                             ocrProgressBar.style.width = percent + '%';
                         }
                     }
-                });
+                };
 
-                const rawText = (worker && worker.data && worker.data.text) ? worker.data.text : '';
-                console.log('Texto reconocido por OCR:', rawText);
+                // Intento 1: Pantalla centrada con dilatación de segmentos LCD
+                let processedCanvas = preprocessImageForOCR(img, true);
+                let worker = await Tesseract.recognize(processedCanvas, 'eng', ocrOptions);
+                let rawText = (worker && worker.data && worker.data.text) ? worker.data.text : '';
+                console.log('OCR Intento 1 (Enfocado):', rawText);
+                let result = extractBPFromOCRText(rawText);
 
-                // Extraer Sistólica, Diastólica y Pulso
-                const { sys, dia, pulse } = extractBPFromOCRText(rawText);
+                // Intento 2: Si no detectó los valores principales, probar con encuadre completo
+                if (!result.sys || !result.dia) {
+                    ocrProgressBar.style.width = '65%';
+                    processedCanvas.width = 1;
+                    processedCanvas.height = 1;
+                    processedCanvas = preprocessImageForOCR(img, false);
+                    worker = await Tesseract.recognize(processedCanvas, 'eng', ocrOptions);
+                    const rawText2 = (worker && worker.data && worker.data.text) ? worker.data.text : '';
+                    console.log('OCR Intento 2 (Completo):', rawText2);
+                    const result2 = extractBPFromOCRText(rawText2);
+                    if (!result.sys && result2.sys) result.sys = result2.sys;
+                    if (!result.dia && result2.dia) result.dia = result2.dia;
+                    if (!result.pulse && result2.pulse) result.pulse = result2.pulse;
+                }
 
-                // Destruir canvas para asegurar liberación de memoria RAM
+                const { sys, dia, pulse } = result;
+
+                // Destruir canvas para asegurar liberación inmediata de memoria RAM
                 processedCanvas.width = 1;
                 processedCanvas.height = 1;
 
